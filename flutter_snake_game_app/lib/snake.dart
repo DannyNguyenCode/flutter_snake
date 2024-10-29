@@ -13,6 +13,7 @@ class Snake{
   Color color = const Color(0xFFFF3D00);
   Snake({required this.snakeLength});
   int snakeLength = 0;
+  int foodAmount = 10;
 
   void initializeSnake(){
     Random rand = Random();
@@ -84,7 +85,7 @@ class Snake{
   void generateFood(){
     Random rand = Random();
 
-    for(int i= 0; i<10;i++){
+    for(int i= 0; i<foodAmount;i++){
       foodList.add(rand.nextInt(150));
     }
 

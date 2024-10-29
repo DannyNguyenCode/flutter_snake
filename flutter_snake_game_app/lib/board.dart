@@ -16,9 +16,12 @@ class _GameBoardState extends State<GameBoard> {
   Direction setDirection = Direction.forward;
   int scoreCounter = 0;
   int gameSpeed = 0;
+  int currentLevel = 1;
+  bool gameComplete = false;
   @override
   void initState(){
     super.initState();
+    snake.foodAmount = 10;
     setGameSpeed(scoreCounter);
     startGame();
   }
@@ -27,12 +30,15 @@ class _GameBoardState extends State<GameBoard> {
       gameSpeed= 1000;
     }else if(score == 10){
       gameSpeed = 500;
-    }else if(score == 20){
+    }else if(score == 25){
       gameSpeed = 200;
-    }else if(score == 30){
+    }else if(score == 40){
       gameSpeed = 100;
     }
 
+  }
+  void setFoodAmount(int foodAmount){
+    snake.foodAmount = foodAmount;
   }
   void setMap(){
 
@@ -43,8 +49,15 @@ class _GameBoardState extends State<GameBoard> {
     gameLoop(frameRate);
   }
   void nextLevel(){
-
+    snake = Snake(snakeLength: 3);
     setGameSpeed(scoreCounter);
+    setFoodAmount(snake.foodAmount +=5);
+    startGame();
+  }
+  void replayLevel(){
+    snake = Snake(snakeLength: 3);
+    setGameSpeed(scoreCounter-10);
+    scoreCounter -=10;
     startGame();
   }
   bool isGameOver(){
@@ -59,7 +72,74 @@ class _GameBoardState extends State<GameBoard> {
     }
     // otherwise game continues
     return false;
-
+  }
+  bool isGameComplete(){
+    return scoreCounter == 55;
+  }
+  void resetGame(){
+    scoreCounter = 0;
+    currentLevel = 1;
+    setGameSpeed(scoreCounter);
+    snake = Snake(snakeLength: 3);
+    startGame();
+  }
+  void showGameOverDialog(){
+      showDialog(context: context, builder: (context)=>AlertDialog(
+        title: const Text('Game Over'),
+        content: Text('Your Current Score: $scoreCounter - Your Current Level: $currentLevel'),
+        actions: [
+          TextButton(
+              onPressed: (){
+                resetGame();
+                Navigator.pop(context);
+              },
+              child: const Text('Play Again'))
+        ],
+      ));
+  }
+  void showNextLevelDialog(){
+    showDialog(context: context, builder: (context)=>AlertDialog(
+      title: const Text('Next Level'),
+      content: Text('Your Current Score: $scoreCounter - Your Current Level: $currentLevel'),
+      actions: [
+        TextButton(
+            onPressed: (){
+              nextLevel();
+              currentLevel++;
+              Navigator.pop(context);
+              },
+            child: const Text('Continue to Next Level')
+        ),
+        TextButton(
+            onPressed: (){
+              replayLevel();
+              Navigator.pop(context);
+            },
+            child: const Text('Replay Same Level')
+        ),
+        TextButton(
+            onPressed: (){
+              resetGame();
+              Navigator.pop(context);
+            },
+            child: const Text('Restart Level 1')
+        )
+      ],
+    ));
+  }
+  void showCompletedGameDialog(){
+    showDialog(context: context, builder: (context)=>AlertDialog(
+      title: const Text('Congratulations, You have Completed the Game'),
+      content: Text('Your Current Score: $scoreCounter - Your Current Level: $currentLevel'),
+      actions: [
+        TextButton(
+            onPressed: (){
+              resetGame();
+              Navigator.pop(context);
+            },
+            child: const Text('Play Again'))
+      ],
+    ));
   }
   void gameLoop(Duration frameRate){
     Timer.periodic(
@@ -101,13 +181,18 @@ class _GameBoardState extends State<GameBoard> {
               default:
                 moveForward();
             }
-            if(snake.foodList.isEmpty){
+            if(snake.foodList.isEmpty && !isGameComplete()){
               timer.cancel();
-              nextLevel();
+              showNextLevelDialog();
             }
             if(isGameOver()){
               timer.cancel();
+              showGameOverDialog();
 
+            }
+            if(isGameComplete()){
+              timer.cancel();
+              showCompletedGameDialog();
             }
 
 
@@ -117,17 +202,22 @@ class _GameBoardState extends State<GameBoard> {
 
   void moveForward(){
     if(!checkCollision(snake.headDirection)){
-      snake.moveSnakeHead(snake.headDirection);
-      snake.moveSnakeBody();
-      snakeAteFood();
+      setState(() {
+        snake.moveSnakeHead(snake.headDirection);
+        snakeAteFood();
+        snake.moveSnakeBody();
+
+      });
+
     }
   }
   void moveLeft(){
     if(!checkCollision(Direction.left)){
       setState(() {
         snake.moveSnakeHead(Direction.left);
-        snake.moveSnakeBody();
         snakeAteFood();
+        snake.moveSnakeBody();
+
       });
     }
   }
@@ -135,8 +225,9 @@ class _GameBoardState extends State<GameBoard> {
     if(!checkCollision(Direction.right)){
       setState(() {
         snake.moveSnakeHead(Direction.right);
-        snake.moveSnakeBody();
         snakeAteFood();
+        snake.moveSnakeBody();
+
       });
     }
   }
@@ -144,8 +235,9 @@ class _GameBoardState extends State<GameBoard> {
     if(!checkCollision(Direction.up)){
       setState(() {
         snake.moveSnakeHead(Direction.up);
-        snake.moveSnakeBody();
         snakeAteFood();
+        snake.moveSnakeBody();
+
       });
     }
   }
@@ -153,8 +245,9 @@ class _GameBoardState extends State<GameBoard> {
     if(!checkCollision(Direction.down)){
       setState(() {
         snake.moveSnakeHead(Direction.down);
-        snake.moveSnakeBody();
         snakeAteFood();
+        snake.moveSnakeBody();
+
       });
     }
   }
@@ -184,6 +277,7 @@ class _GameBoardState extends State<GameBoard> {
       snake.foodList.remove(snake.snakePartList[0].currentPixel);
       snake.snakeLength++;
       snake.snakePartList.add(SnakePart(currentPixel: snake.snakePartList[snake.snakeLength -2].previousPixel));
+      scoreCounter++;
 
     }
   }
@@ -236,8 +330,14 @@ class _GameBoardState extends State<GameBoard> {
                   }
             }),
           ),
+          Text(
+              'Score: ${scoreCounter.toString()} - Level: ${currentLevel.toString()}',
+              style: const TextStyle(
+                color: Colors.white,
+              ),
+          ),
           Padding(
-            padding: const EdgeInsets.only(bottom:50.0, top: 50.0),
+            padding: const EdgeInsets.only(bottom:15.0, top: 25.0),
             child: Column(
               children: [
                 IconButton(
